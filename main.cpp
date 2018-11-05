@@ -16,6 +16,19 @@ signed int __thiscall Creature__CalculateMaxExp(cube::Creature *creature){
         //leave lategame exp values alone. This is the original calculation.
         result = (int)( ( 1.0 - ( 1.0/( (level-1) * 0.05 +1.0) ) ) * 1000.0 + 50.0);
     }
+
+
+    /*
+    Sometimes, people weren't leveling up at their new EXP limit (in multiplayer?)
+    I don't know if this is a bug with multiplayer specifically,
+    but this should correct for it.
+    */
+    if (creature->XP > result){
+        int extra_xp = creature->XP - result;
+        creature->level += 1;
+        creature->XP = extra_xp;
+    }
+
     return result;
 }
 
