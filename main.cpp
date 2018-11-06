@@ -23,7 +23,7 @@ signed int __thiscall Creature__CalculateMaxExp(cube::Creature *creature){
     I don't know if this is a bug with multiplayer specifically,
     but this should correct for it.
     */
-    if (creature->XP > result){
+    if (creature->XP >= result){
         int extra_xp = creature->XP - result;
         creature->level += 1;
         creature->XP = extra_xp;
