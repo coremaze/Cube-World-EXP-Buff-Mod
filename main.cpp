@@ -14,23 +14,37 @@ signed int __thiscall Creature__CalculateMaxExp(cube::Creature *creature){
     }
     else {
         //leave lategame exp values alone. This is the original calculation.
-        result = (int)( ( 1.0 - ( 1.0/( (level-1) * 0.05 +1.0) ) ) * 1000.0 + 50.0);
+        result = (int)( ( 1.0 - ( 1.0/( (level-1) * 0.05 + 1.0) ) ) * 1000.0 + 50.0);
     }
-
-
-    /*
-    Sometimes, people weren't leveling up at their new EXP limit (in multiplayer?)
-    I don't know if this is a bug with multiplayer specifically,
-    but this should correct for it.
-    */
-    if (creature->XP >= result){
-        int extra_xp = creature->XP - result;
-        creature->level += 1;
-        creature->XP = extra_xp;
-    }
-
     return result;
 }
+unsigned int Creature__CalculateMaxExp_ptr = (unsigned int)&Creature__CalculateMaxExp;
+
+
+unsigned int inlinefix1_jmp_back;
+void __declspec(naked) __declspec(noinline) inlinefix1(){
+    asm("call [_Creature__CalculateMaxExp_ptr]");
+    asm("jmp [_inlinefix1_jmp_back]");
+}
+
+unsigned int inlinefix2_jmp_back;
+void __declspec(naked) __declspec(noinline) inlinefix2(){
+    asm("push ecx");
+    asm("mov ecx, esi");
+    asm("call [_Creature__CalculateMaxExp_ptr]");
+    asm("pop ecx");
+    asm("jmp [_inlinefix2_jmp_back]");
+}
+
+unsigned int inlinefix3_jmp_back;
+void __declspec(naked) __declspec(noinline) inlinefix3(){
+    asm("push ecx");
+    asm("mov ecx, esi");
+    asm("call [_Creature__CalculateMaxExp_ptr]");
+    asm("pop ecx");
+    asm("jmp [_inlinefix3_jmp_back]");
+}
+
 
 void WriteJMP(BYTE* location, BYTE* newFunction){
 	DWORD dwOldProtection;
@@ -48,6 +62,19 @@ extern "C" __declspec(dllexport) bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD
             base = (unsigned int)GetModuleHandle(NULL);
             //Overwrite the original function to calculate max exp.
             WriteJMP((BYTE*)(base + 0x44D60), (BYTE*)&Creature__CalculateMaxExp);
+
+
+            //There's a function for leveling up which has been hit by function inlining for some reason.
+            //We gotta clean it up and stop the inlining
+            inlinefix1_jmp_back = base + 0x47B5E;
+            WriteJMP((BYTE*)(base + 0x47B11), (BYTE*)&inlinefix1);
+
+            inlinefix2_jmp_back = base + 0x47BA3;
+            WriteJMP((BYTE*)(base + 0x47B7A), (BYTE*)&inlinefix2);
+
+            inlinefix3_jmp_back = base + 0x47C10;
+            WriteJMP((BYTE*)(base + 0x47BBF), (BYTE*)&inlinefix3);
+
             break;
 
     }
